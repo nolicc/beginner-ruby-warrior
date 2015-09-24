@@ -4,6 +4,10 @@ class WarriorProxy
 
   attr_accessor :warrior
 
+  def initialize
+    @previous_health = MAX_HEALTH
+  end
+
   def method_missing(method_name, *args, &block)
     if @warrior.respond_to? method_name
       @warrior.send(method_name, *args, &block)
@@ -75,20 +79,9 @@ module SomethingBehindActions
 end
 
 module BadlyWoundedActions
-  def can_rest_situation
-    if !@player.warrior_taking_damage?
-      @player.warrior.rest!
-      true
-    else
-      false
-    end
-  end
-
   def badly_wounded_actions
     unless @player.warrior.optimal_health?
       return true if enemy_far_ahead_with_clear_view_situation
-      # return true if must_rest_situation
-      return true if can_rest_situation
     end
     false
   end
@@ -167,17 +160,11 @@ class Action
 end
 
 class Player
-  attr_reader :warrior, :previous_health
+  attr_reader :warrior
 
   def play_turn(warrior)
     @warrior ||= WarriorProxy.new
     @warrior.warrior = warrior
-    @previous_health ||= @warrior.health
     Action.new(self).take
-    @previous_health = @warrior.health
-  end
-
-  def warrior_taking_damage?
-    [0, @previous_health - @warrior.health].max != 0
   end
 end
