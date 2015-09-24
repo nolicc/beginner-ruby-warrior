@@ -78,15 +78,6 @@ module SomethingBehindActions
   end
 end
 
-module BadlyWoundedActions
-  def badly_wounded_actions
-    unless @player.warrior.optimal_health?
-      return true if enemy_far_ahead_with_clear_view_situation
-    end
-    false
-  end
-end
-
 module EnemyActions
   def next_to_an_enemy_situation
     if @player.warrior.feel.enemy?
@@ -122,7 +113,6 @@ end
 
 class Action
   include SomethingBehindActions
-  include BadlyWoundedActions
   include EnemyActions
 
   def initialize(player)
@@ -148,13 +138,8 @@ class Action
   def take
     return if something_behind_actions
     return if captive_actions
-    return if badly_wounded_actions
     return if wall_actions
     return if enemy_actions
-    default_actions
-  end
-
-  def default_actions
     @player.warrior.walk!
   end
 end
