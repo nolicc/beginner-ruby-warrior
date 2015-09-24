@@ -1,3 +1,5 @@
+require "pry"
+
 class WarriorProxy
   MAX_HEALTH = 20
   REST_HEALTH_INC = MAX_HEALTH * 0.1
@@ -54,60 +56,47 @@ end
 module SomethingBehindActions
   def captive_behind_actions
     if @player.warrior.feel(:backward).captive?
-      @player.warrior.rescue!(:backward)
+      -> { @player.warrior.rescue!(:backward) }
     else
-      @player.warrior.pivot!
+      ->{ @player.warrior.pivot! }
     end
-    true
   end
 
   def wall_behind_actions
     if @player.warrior.feel(:backward).stairs?
-      @player.warrior.walk!(:backward)
+      -> { @player.warrior.walk!(:backward) }
     else
-      @player.warrior.pivot!
+      -> { @player.warrior.pivot! }
     end
-    true
   end
 
   def something_behind_actions
     behind_view = @player.warrior.look(:backward)
-    return captive_behind_actions if behind_view.any?(&:captive?)
-    return wall_behind_actions if behind_view.any?(&:stairs?)
-    false
+    action ||= captive_behind_actions if behind_view.any?(&:captive?)
+    action ||= wall_behind_actions if behind_view.any?(&:stairs?)
+    action
   end
 end
 
 module EnemyActions
   def next_to_an_enemy_situation
-    if @player.warrior.feel.enemy?
-      @player.warrior.attack!
-      return true
-    end
-    false
+    -> { @player.warrior.attack! } if @player.warrior.feel.enemy?
   end
 
   def surrounded_situation
-    if @player.warrior.surrounded?
-      @player.warrior.walk!
-      return true
-    end
-    false
+    -> { @player.warrior.walk! } if @player.warrior.surrounded?
   end
 
   def enemy_far_ahead_with_clear_view_situation
     if @player.warrior.enemy_far_ahead_with_clear_view?
-      @player.warrior.shoot!
-      return true
+      -> { @player.warrior.shoot! }
     end
-    false
   end
 
   def enemy_actions
-    return true if next_to_an_enemy_situation
-    return true if surrounded_situation
-    return true if enemy_far_ahead_with_clear_view_situation
-    false
+    action ||= next_to_an_enemy_situation
+    action ||= surrounded_situation
+    action ||= enemy_far_ahead_with_clear_view_situation
   end
 end
 
@@ -119,28 +108,13 @@ class Action
     @player = player
   end
 
-  def wall_actions
-    if @player.warrior.feel.wall?
-      @player.warrior.pivot!
-      return true
-    end
-    false
-  end
-
-  def captive_actions
-    if @player.warrior.feel.captive?
-      @player.warrior.rescue!
-      return true
-    end
-    false
-  end
-
   def take
-    return if something_behind_actions
-    return if captive_actions
-    return if wall_actions
-    return if enemy_actions
-    @player.warrior.walk!
+    action ||= something_behind_actions
+    action ||= -> { @player.warrior.rescue! } if @player.warrior.feel.captive?
+    action ||= -> { @player.warrior.pivot! } if @player.warrior.feel.wall?
+    action ||= enemy_actions
+    action ||= -> { @player.warrior.walk! }
+    action.call
   end
 end
 
