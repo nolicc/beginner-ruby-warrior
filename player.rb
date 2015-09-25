@@ -7,8 +7,7 @@ module AdvancedWarrior
   end
 
   def enemy_far_ahead_with_clear_view?(direction = :forward)
-    @eye_direction = direction
-    enemy_distance.to_i >= 1 && captive_before_enemy?
+    enemy_distance(direction).to_i >= 1 && captive_before_enemy?(direction)
   end
 
   def surrounded?
@@ -26,16 +25,17 @@ module AdvancedWarrior
 
   private
 
-  def captive_before_enemy?
-    (!captive_distance || enemy_distance < captive_distance)
+  def captive_before_enemy?(direction)
+    !captive_distance(direction) ||
+      enemy_distance(direction) < captive_distance(direction)
   end
 
-  def enemy_distance
-    look(@eye_direction).index(&:enemy?)
+  def enemy_distance(direction)
+    look(direction).index(&:enemy?)
   end
 
-  def captive_distance
-    look(@eye_direction).index(&:captive?)
+  def captive_distance(direction)
+    look(direction).index(&:captive?)
   end
 end
 
