@@ -39,7 +39,15 @@ module AdvancedWarrior
   end
 end
 
-module SomethingBehindActions
+class Player
+  attr_reader :warrior
+
+  def play_turn(warrior)
+    @warrior = warrior
+    @warrior.extend(AdvancedWarrior)
+    action.call
+  end
+
   def captive_behind_actions
     return unless @warrior.captive_behind?
     if @warrior.feel(:backward).captive?
@@ -62,9 +70,15 @@ module SomethingBehindActions
     action ||= captive_behind_actions
     action || stairs_behind_actions
   end
-end
 
-module EnemyActions
+  def captive_action
+    -> { @warrior.rescue! } if @warrior.feel.captive?
+  end
+
+  def wall_action
+    -> { @warrior.pivot! } if @warrior.feel.wall?
+  end
+
   def next_to_an_enemy_situation
     -> { @warrior.attack! } if @warrior.feel.enemy?
   end
@@ -81,27 +95,6 @@ module EnemyActions
     action ||= next_to_an_enemy_situation
     action ||= surrounded_situation
     action || enemy_far_ahead_with_clear_view_situation
-  end
-end
-
-class Player
-  include SomethingBehindActions
-  include EnemyActions
-
-  attr_reader :warrior
-
-  def play_turn(warrior)
-    @warrior = warrior
-    @warrior.extend(AdvancedWarrior)
-    action.call
-  end
-
-  def captive_action
-    -> { @warrior.rescue! } if @warrior.feel.captive?
-  end
-
-  def wall_action
-    -> { @warrior.pivot! } if @warrior.feel.wall?
   end
 
   def action
