@@ -79,22 +79,22 @@ class Player
     -> { @warrior.pivot! } if @warrior.feel.wall?
   end
 
-  def next_to_an_enemy_situation
+  def next_to_an_enemy_action
     -> { @warrior.attack! } if @warrior.feel.enemy?
   end
 
-  def surrounded_situation
+  def surrounded_action
     -> { @warrior.walk! } if @warrior.surrounded?
   end
 
-  def enemy_far_ahead_with_clear_view_situation
+  def enemy_far_ahead_with_clear_view_action
     -> { @warrior.shoot! } if @warrior.enemy_far_ahead_with_clear_view?
   end
 
   def enemy_actions
-    action ||= next_to_an_enemy_situation
-    action ||= surrounded_situation
-    action || enemy_far_ahead_with_clear_view_situation
+    action ||= next_to_an_enemy_action
+    action ||= surrounded_action
+    action || enemy_far_ahead_with_clear_view_action
   end
 
   def action
