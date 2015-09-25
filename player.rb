@@ -1,5 +1,3 @@
-require "pry"
-
 module AdvancedWarrior
   MAX_HEALTH = 20
   REST_HEALTH_INC = MAX_HEALTH * 0.1
@@ -10,12 +8,12 @@ module AdvancedWarrior
 
   def enemy_far_ahead_with_clear_view?(direction = :forward)
     @eye_direction = direction
-    enemy_distance.to_i >=1 && captive_before_enemy?
+    enemy_distance.to_i >= 1 && captive_before_enemy?
   end
 
   def surrounded?
     enemy_far_ahead_with_clear_view?(:forward) &&
-       enemy_far_ahead_with_clear_view?(:backward)
+      enemy_far_ahead_with_clear_view?(:backward)
   end
 
   def captive_behind?
@@ -25,13 +23,13 @@ module AdvancedWarrior
   def stairs_behind?
     look(:backward).any?(&:stairs?)
   end
-  
+
   private
 
   def captive_before_enemy?
     (!captive_distance || enemy_distance < captive_distance)
   end
-  
+
   def enemy_distance
     look(@eye_direction).index(&:enemy?)
   end
@@ -43,28 +41,26 @@ end
 
 module SomethingBehindActions
   def captive_behind_actions
-    if @warrior.captive_behind?
-      if @warrior.feel(:backward).captive?
-        -> { @warrior.rescue!(:backward) }
-      else
-        ->{ @warrior.pivot! }
-      end
+    return unless @warrior.captive_behind?
+    if @warrior.feel(:backward).captive?
+      -> { @warrior.rescue!(:backward) }
+    else
+      -> { @warrior.pivot! }
     end
   end
 
   def stairs_behind_actions
-    if @warrior.stairs_behind?
-      if @warrior.feel(:backward).stairs?
-        -> { @warrior.walk!(:backward) }
-      else
-        -> { @warrior.pivot! }
-      end
+    return unless @warrior.stairs_behind?
+    if @warrior.feel(:backward).stairs?
+      -> { @warrior.walk!(:backward) }
+    else
+      -> { @warrior.pivot! }
     end
   end
 
   def something_behind_actions
     action ||= captive_behind_actions
-    action ||= stairs_behind_actions
+    action || stairs_behind_actions
   end
 end
 
@@ -78,15 +74,13 @@ module EnemyActions
   end
 
   def enemy_far_ahead_with_clear_view_situation
-    if @warrior.enemy_far_ahead_with_clear_view?
-      -> { @warrior.shoot! }
-    end
+    -> { @warrior.shoot! } if @warrior.enemy_far_ahead_with_clear_view?
   end
 
   def enemy_actions
     action ||= next_to_an_enemy_situation
     action ||= surrounded_situation
-    action ||= enemy_far_ahead_with_clear_view_situation
+    action || enemy_far_ahead_with_clear_view_situation
   end
 end
 
@@ -115,6 +109,6 @@ class Player
     action ||= captive_action
     action ||= wall_action
     action ||= enemy_actions
-    action ||= -> { @warrior.walk! }
+    action || -> { @warrior.walk! }
   end
 end
