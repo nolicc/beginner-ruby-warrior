@@ -8,14 +8,6 @@ module AdvancedWarrior
     (health + REST_HEALTH_INC).floor >= MAX_HEALTH
   end
 
-  def retreat!(direction = :foward)
-    if direction == :backward
-      walk! :forward
-    else
-      walk! :backward
-    end
-  end
-
   def enemy_far_ahead_with_clear_view?(direction = :forward)
     captive_index = look(direction).index(&:captive?)
     enemy_index   = look(direction).index(&:enemy?)
