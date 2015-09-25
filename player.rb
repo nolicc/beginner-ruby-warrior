@@ -9,50 +9,62 @@ module AdvancedWarrior
   end
 
   def enemy_far_ahead_with_clear_view?(direction = :forward)
-    captive_index = look(direction).index(&:captive?)
-    enemy_index   = look(direction).index(&:enemy?)
-    if !enemy_index.nil? && enemy_index >= 1
-      if !captive_index.nil? && captive_index < enemy_index
-        return false
-      else
-        return true
-      end
-    end
-    false
+    @eye_direction = direction
+    enemy_distance.to_i >=1 && captive_before_enemy?
   end
 
   def surrounded?
-    if enemy_far_ahead_with_clear_view?(:forward) &&
+    enemy_far_ahead_with_clear_view?(:forward) &&
        enemy_far_ahead_with_clear_view?(:backward)
-      true
-    else
-      false
-    end
+  end
+
+  def captive_behind?
+    look(:backward).any?(&:captive?)
+  end
+
+  def stairs_behind?
+    look(:backward).any?(&:stairs?)
+  end
+  
+  private
+
+  def captive_before_enemy?
+    (!captive_distance || enemy_distance < captive_distance)
+  end
+  
+  def enemy_distance
+    look(@eye_direction).index(&:enemy?)
+  end
+
+  def captive_distance
+    look(@eye_direction).index(&:captive?)
   end
 end
 
 module SomethingBehindActions
   def captive_behind_actions
-    if @warrior.feel(:backward).captive?
-      -> { @warrior.rescue!(:backward) }
-    else
-      ->{ @warrior.pivot! }
+    if @warrior.captive_behind?
+      if @warrior.feel(:backward).captive?
+        -> { @warrior.rescue!(:backward) }
+      else
+        ->{ @warrior.pivot! }
+      end
     end
   end
 
-  def wall_behind_actions
-    if @warrior.feel(:backward).stairs?
-      -> { @warrior.walk!(:backward) }
-    else
-      -> { @warrior.pivot! }
+  def stairs_behind_actions
+    if @warrior.stairs_behind?
+      if @warrior.feel(:backward).stairs?
+        -> { @warrior.walk!(:backward) }
+      else
+        -> { @warrior.pivot! }
+      end
     end
   end
 
   def something_behind_actions
-    behind_view = @warrior.look(:backward)
-    action ||= captive_behind_actions if behind_view.any?(&:captive?)
-    action ||= wall_behind_actions if behind_view.any?(&:stairs?)
-    action
+    action ||= captive_behind_actions
+    action ||= stairs_behind_actions
   end
 end
 
@@ -87,15 +99,22 @@ class Player
   def play_turn(warrior)
     @warrior = warrior
     @warrior.extend(AdvancedWarrior)
-    action!
+    action.call
   end
 
-  def action!
+  def captive_action
+    -> { @warrior.rescue! } if @warrior.feel.captive?
+  end
+
+  def wall_action
+    -> { @warrior.pivot! } if @warrior.feel.wall?
+  end
+
+  def action
     action ||= something_behind_actions
-    action ||= -> { @warrior.rescue! } if @warrior.feel.captive?
-    action ||= -> { @warrior.pivot! } if @warrior.feel.wall?
+    action ||= captive_action
+    action ||= wall_action
     action ||= enemy_actions
     action ||= -> { @warrior.walk! }
-    action.call
   end
 end
