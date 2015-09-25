@@ -55,23 +55,23 @@ end
 
 module SomethingBehindActions
   def captive_behind_actions
-    if @player.warrior.feel(:backward).captive?
-      -> { @player.warrior.rescue!(:backward) }
+    if @warrior.feel(:backward).captive?
+      -> { @warrior.rescue!(:backward) }
     else
-      ->{ @player.warrior.pivot! }
+      ->{ @warrior.pivot! }
     end
   end
 
   def wall_behind_actions
-    if @player.warrior.feel(:backward).stairs?
-      -> { @player.warrior.walk!(:backward) }
+    if @warrior.feel(:backward).stairs?
+      -> { @warrior.walk!(:backward) }
     else
-      -> { @player.warrior.pivot! }
+      -> { @warrior.pivot! }
     end
   end
 
   def something_behind_actions
-    behind_view = @player.warrior.look(:backward)
+    behind_view = @warrior.look(:backward)
     action ||= captive_behind_actions if behind_view.any?(&:captive?)
     action ||= wall_behind_actions if behind_view.any?(&:stairs?)
     action
@@ -80,16 +80,16 @@ end
 
 module EnemyActions
   def next_to_an_enemy_situation
-    -> { @player.warrior.attack! } if @player.warrior.feel.enemy?
+    -> { @warrior.attack! } if @warrior.feel.enemy?
   end
 
   def surrounded_situation
-    -> { @player.warrior.walk! } if @player.warrior.surrounded?
+    -> { @warrior.walk! } if @warrior.surrounded?
   end
 
   def enemy_far_ahead_with_clear_view_situation
-    if @player.warrior.enemy_far_ahead_with_clear_view?
-      -> { @player.warrior.shoot! }
+    if @warrior.enemy_far_ahead_with_clear_view?
+      -> { @warrior.shoot! }
     end
   end
 
@@ -100,30 +100,24 @@ module EnemyActions
   end
 end
 
-class Action
+class Player
   include SomethingBehindActions
   include EnemyActions
 
-  def initialize(player)
-    @player = player
-  end
-
-  def take
-    action ||= something_behind_actions
-    action ||= -> { @player.warrior.rescue! } if @player.warrior.feel.captive?
-    action ||= -> { @player.warrior.pivot! } if @player.warrior.feel.wall?
-    action ||= enemy_actions
-    action ||= -> { @player.warrior.walk! }
-    action.call
-  end
-end
-
-class Player
   attr_reader :warrior
 
   def play_turn(warrior)
     @warrior ||= WarriorProxy.new
     @warrior.warrior = warrior
-    Action.new(self).take
+    action!
+  end
+
+  def action!
+    action ||= something_behind_actions
+    action ||= -> { @warrior.rescue! } if @warrior.feel.captive?
+    action ||= -> { @warrior.pivot! } if @warrior.feel.wall?
+    action ||= enemy_actions
+    action ||= -> { @warrior.walk! }
+    action.call
   end
 end
