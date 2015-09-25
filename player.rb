@@ -1,22 +1,8 @@
 require "pry"
 
-class WarriorProxy
+module AdvancedWarrior
   MAX_HEALTH = 20
   REST_HEALTH_INC = MAX_HEALTH * 0.1
-
-  attr_accessor :warrior
-
-  def initialize
-    @previous_health = MAX_HEALTH
-  end
-
-  def method_missing(method_name, *args, &block)
-    if @warrior.respond_to? method_name
-      @warrior.send(method_name, *args, &block)
-    else
-      super
-    end
-  end
 
   def optimal_health?
     (health + REST_HEALTH_INC).floor >= MAX_HEALTH
@@ -107,8 +93,8 @@ class Player
   attr_reader :warrior
 
   def play_turn(warrior)
-    @warrior ||= WarriorProxy.new
-    @warrior.warrior = warrior
+    @warrior = warrior
+    @warrior.extend(AdvancedWarrior)
     action!
   end
 
